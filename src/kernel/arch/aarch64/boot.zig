@@ -31,7 +31,7 @@ export fn _start() linksection(".text.boot") callconv(.Naked) noreturn {
 
 fn start() noreturn {
     // Halt all cores other than core 0, until the kernel has multicore support
-    if (Cpu.mpidr.el(1).read() & 0x3 != 0) {
+    if (Cpu.mpidr.el(1).read().Aff0 & 0x3 != 0) {
         while (true) {
             Cpu.wfe();
         }
@@ -46,7 +46,7 @@ fn start() noreturn {
 
     arch.enableFlatMmu();
 
-    board = detectBoard();
+    board = rpi.RaspberryPiBoard.fromPartNumber(Cpu.midr.el(1).read().PartNum) orelse @panic("Unrecognised part number");
     arch.initMmioAddress(&board);
 
     kmain(&board);
@@ -54,8 +54,3 @@ fn start() noreturn {
 }
 
 var board: rpi.RaspberryPiBoard = undefined;
-
-fn detectBoard() rpi.RaspberryPiBoard {
-    const part_number = @truncate(u12, Cpu.midr.el(1).read() >> 4);
-    return rpi.RaspberryPiBoard.fromPartNumber(part_number) orelse @panic("Unrecognised part number");
-}
